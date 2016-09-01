@@ -1,6 +1,5 @@
 """
 Pygletを使ったテトリス。実装部分
-
 """
 import random
 import warnings
@@ -12,12 +11,13 @@ import pyglet
 class TetrominoType(object):
     TYPES = tuple()
 
-    def __init__(self, block_image, local_coords):
+    def __init__(self, block_image, dmblock , local_coords):
         self._block_image = block_image
+        self._dmblock = dmblock
         self._local_coords = local_coords
 
     @staticmethod
-    def class_init(block_image, block_size):
+    def class_init(block_image, dmblock, block_size):
         """
         block_imageからblock_sizeで8色のブロックを切り出す。
         その後、7種のテトロミノタイプを定義してstaticメンバとして生成
@@ -34,9 +34,18 @@ class TetrominoType(object):
         orange = block_image.get_region(block_size * 6, 0, block_size, block_size)
         purple = block_image.get_region(block_size * 7, 0, block_size, block_size)
 
+        dm_dummy = dmblock.get_region(block_size * 0, 0, block_size, block_size)
+        dm_cyan = dmblock.get_region(block_size * 1, 0, block_size, block_size)
+        dm_yellow = dmblock.get_region(block_size * 2, 0, block_size, block_size)
+        dm_green = dmblock.get_region(block_size * 3, 0, block_size, block_size)
+        dm_red = dmblock.get_region(block_size * 4, 0, block_size, block_size)
+        dm_blue = dmblock.get_region(block_size * 5, 0, block_size, block_size)
+        dm_orange = dmblock.get_region(block_size * 6, 0, block_size, block_size)
+        dm_purple = dmblock.get_region(block_size * 7, 0, block_size, block_size)
+
         TetrominoType.TYPES = (
             # type I
-            TetrominoType(cyan,
+            TetrominoType(cyan,dm_cyan,
                           {
                               Tetromino.RIGHT: ((0, 1), (1, 1), (2, 1), (3, 1)),
                               Tetromino.DOWN: ((1, 0), (1, 1), (1, 2), (1, 3)),
@@ -45,7 +54,7 @@ class TetrominoType(object):
                           }
                           ),
             # type O
-            TetrominoType(yellow,
+            TetrominoType(yellow,dm_yellow,
                           {
                               Tetromino.RIGHT: ((1, 0), (1, 1), (2, 0), (2, 1)),
                               Tetromino.DOWN: ((1, 0), (1, 1), (2, 0), (2, 1)),
@@ -54,7 +63,7 @@ class TetrominoType(object):
                           }
                           ),
             # type S
-            TetrominoType(green,
+            TetrominoType(green,dm_green,
                           {
                               Tetromino.RIGHT: ((0, 0), (1, 0), (1, 1), (2, 1)),
                               Tetromino.DOWN: ((0, 2), (0, 1), (1, 1), (1, 0)),
@@ -63,7 +72,7 @@ class TetrominoType(object):
                           }
                           ),
             # type Z
-            TetrominoType(red,
+            TetrominoType(red,dm_red,
                           {
                               Tetromino.RIGHT: ((0, 1), (1, 1), (1, 0), (2, 0)),
                               Tetromino.DOWN: ((0, 0), (0, 1), (1, 1), (1, 2)),
@@ -72,7 +81,7 @@ class TetrominoType(object):
                           }
                           ),
             # type J
-            TetrominoType(blue,
+            TetrominoType(blue,dm_blue,
                           {
                               Tetromino.RIGHT: ((0, 2), (0, 1), (1, 1), (2, 1)),
                               Tetromino.DOWN: ((1, 0), (1, 1), (1, 2), (2, 2)),
@@ -81,7 +90,7 @@ class TetrominoType(object):
                           }
                           ),
             # type L
-            TetrominoType(orange,
+            TetrominoType(orange,dm_orange,
                           {
                               Tetromino.RIGHT: ((0, 1), (1, 1), (2, 1), (2, 2)),
                               Tetromino.DOWN: ((1, 2), (1, 1), (1, 0), (2, 0)),
@@ -91,7 +100,7 @@ class TetrominoType(object):
 
                           ),
             # type T
-            TetrominoType(purple,
+            TetrominoType(purple,dm_purple,
                           {
                               Tetromino.RIGHT: ((0, 1), (1, 1), (2, 1), (1, 2)),
                               Tetromino.DOWN: ((1, 0), (1, 1), (1, 2), (2, 1)),
@@ -100,6 +109,8 @@ class TetrominoType(object):
                           }
                           ),
         )
+
+
 
     @staticmethod
     def random_type():
@@ -203,8 +214,10 @@ class Tetromino(object):
         self._block_board_coords = new_block_board_coords
         return len(self._block_board_coords) > 0
 
-    def draw(self, screen_coords):
+    def draw(self, screen_coords, isDummy=False):
         image = self._tetromino_type.get_block()
+        if isDummy:
+            image = self._tetromino_type._dmblock
         for coords in screen_coords:
             image.blit(coords[0], coords[1])
 
@@ -225,6 +238,7 @@ class Board(object):
         self.spawn_tetromino()
         self._tetromino_list = []
         self._is_after_move = False
+        self.dummy = Tetromino()
         self._holder = holder  # type: Holder
 
     def spawn_tetromino(self):
@@ -234,18 +248,23 @@ class Board(object):
     def command_falling_tetromino(self, command):
         if command != InputProcessor.MOVE_DOWN:
             self._is_after_move = True
+        if command != InputProcessor.MOVE_UP:
+            self._is_after_move = True
 
-        # if command == InputProcessor.DROP:
-        #     while True:
-        #         self._falling_tetromino.command(InputProcessor.MOVE_DOWN)
-        #         if not self.is_valid_position():
-        #             self._falling_tetromino.undo_command(InputProcessor.MOVE_DOWN)
+        if command == InputProcessor.DROP:
+            while True:
+                self._falling_tetromino.command(InputProcessor.MOVE_DOWN)
+                if not self.is_valid_position():
+                    self._falling_tetromino.undo_command(InputProcessor.MOVE_DOWN)
                     # self._tetromino_list.append(self._falling_tetromino)
                     # full_rows = self.find_full_rows()
                     # self.clear_rows(full_rows)
                     # self.spawn_tetromino()
                     # self._holder.release()
-                    # break
+                    self._is_after_move = False
+                    break
+                    # TODO aaaaaaaaaaaaaaaaaaaaaaaa
+
 
 
         if command == InputProcessor.HOLDING:
@@ -292,11 +311,26 @@ class Board(object):
                         self._falling_tetromino.undo_command(InputProcessor.MOVE_RIGHT)
                         self._falling_tetromino.undo_command(InputProcessor.ROTATE_CLOCKWISE)
 
-    def is_valid_position(self):
+    def update_dummy(self):
+        self.dummy._x = self._falling_tetromino._x
+        self.dummy._y = self._falling_tetromino._y
+        self.dummy._orientation = self._falling_tetromino._orientation
+        self.dummy._block_board_coords = self._falling_tetromino._block_board_coords
+        self.dummy._tetromino_type = self._falling_tetromino._tetromino_type
+
+        while True:
+            self.dummy.command(InputProcessor.MOVE_DOWN)
+            if not self.is_valid_position(self.dummy):
+                self.dummy.undo_command(InputProcessor.MOVE_DOWN)
+                break
+
+    def is_valid_position(self, mino=None):
+        if mino is None:
+            mino = self._falling_tetromino
         non_falling_block_coords = []
         for tetromino in self._tetromino_list:
             non_falling_block_coords.extend(tetromino.get_block_board_coords())
-        for coord in self._falling_tetromino.get_block_board_coords():
+        for coord in mino.get_block_board_coords():
             out_of_bounds = coord[0] < 0 or coord[0] >= self._grid_width or \
                             coord[1] < 0
             overlapping = coord in non_falling_block_coords
@@ -353,7 +387,6 @@ class Board(object):
                 num_cleared_rows = len(full_rows)
         return num_cleared_rows, game_lost
 
-
     def is_in_start_zone(self, tetromino):
         for coords in tetromino.get_block_board_coords():
             if coords[1] >= self._grid_height:
@@ -377,6 +410,10 @@ class Board(object):
         screen_coords = self.grid_coords_to_screen_coords(
             self._falling_tetromino.get_block_board_coords())
         self._falling_tetromino.draw(screen_coords)
+
+        screen_coords = self.grid_coords_to_screen_coords(
+            self.dummy.get_block_board_coords())
+        self.dummy.draw(screen_coords, isDummy=True)
 
 
 class InfoDisplay(object):
@@ -432,7 +469,7 @@ class InputProcessor(object):
     def process_keypress(self, symbol, modifiers):
         if symbol == pyglet.window.key.SPACE:
             self.action = InputProcessor.TOGGLE_PAUSE
-        elif symbol == pyglet.window.key.RSHIFT:
+        elif symbol == pyglet.window.key.Z:
             self.action = InputProcessor.ROTATE_CLOCKWISE
         elif symbol == pyglet.window.key.LSHIFT:
             self.action = InputProcessor.HOLDING
@@ -500,16 +537,15 @@ class Game(object):
         elif rows_cleared == 4:
             self._score += 8
 
-        ##speedUp
         if self._score == 5:
             self._tick_speed = 0.5
-        elif self._score == 15:
-            self._tick_speed = 0.4
         elif self._score == 20:
-            self._tick_speed = 0.3
-        elif self._score == 25:
-            self._tick_speed = 0.2
+            self._tick_speed = 0.4
         elif self._score == 30:
+            self._tick_speed = 0.3
+        elif self._score == 40:
+            self._tick_speed = 0.2
+        elif self._score == 50:
             self._tick_speed = 0.1
 
 
@@ -520,9 +556,11 @@ class Game(object):
         self._paused = not self._paused
         self._info_display.showPausedLabel = self._paused
 
+
+
     def update(self):
         if self._lost:
-            self._info_display.showGameoverLabel = True
+            self._info_display._show_game_over_label = True
         else:
             command = self._input.consume()
             if command == InputProcessor.TOGGLE_PAUSE:
@@ -530,9 +568,11 @@ class Game(object):
             if not self._paused:
                 if command and command != InputProcessor.TOGGLE_PAUSE:
                     self._board.command_falling_tetromino(command)
-                if self._ticker.is_tick(self._tick_speed):
+                if self._ticker.is_tick(self._tick_speed) or command == InputProcessor.MOVE_UP:
                     rows_cleared, self._lost = self._board.update_tick()
                     self.add_rows_cleared(rows_cleared)
+                self._board.update_dummy()
+
 
     def draw(self):
         self._background_image.blit(0, 0)
