@@ -542,7 +542,7 @@ class Game(object):
         #elif self._score == 20:
         #    self._tick_speed = 0.4
         #elif self._score == 30:
-            self._tick_speed = 0.3
+        #    self._tick_speed = 0.3
         #elif self._score == 40:
         #    self._tick_speed = 0.2
         #elif self._score == 50:
