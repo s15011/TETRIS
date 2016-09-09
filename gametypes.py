@@ -537,7 +537,7 @@ class Game(object):
         elif rows_cleared == 4:
             self._score += 8
 
-        if self._score == 5:
+        if self._score >= 5:
         #     self._tick_speed = 0.5
         # elif self._score == 20:
         #     self._tick_speed = 0.4
