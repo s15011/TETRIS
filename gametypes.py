@@ -263,7 +263,7 @@ class Board(object):
                     # self._holder.release()
                     self._is_after_move = False
                     break
-
+                    # TODO aaaaaaaaaaaaaaaaaaaaaaaa
 
 
 
@@ -538,14 +538,14 @@ class Game(object):
             self._score += 8
 
         if self._score >= 5:
-        #     self._tick_speed = 0.5
-        # elif self._score == 20:
-        #     self._tick_speed = 0.4
-        # elif self._score == 30:
-        #     self._tick_speed = 0.3
-        # elif self._score == 40:
-        #     self._tick_speed = 0.2
-        # elif self._score == 50:
+            self._tick_speed = 0.5
+        elif self._score >= 20:
+            self._tick_speed = 0.4
+        elif self._score >= 30:
+            self._tick_speed = 0.3
+        elif self._score >= 40:
+            self._tick_speed = 0.2
+        elif self._score >= 50:
             self._tick_speed = 0.1
 
 
